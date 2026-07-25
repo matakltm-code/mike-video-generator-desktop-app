@@ -1,0 +1,54 @@
+{
+  "name": "mike-video-generator",
+  "version": "1.0.0",
+  "description": "A Windows desktop app for composing short-form videos with text overlays, images, and background music.",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "dist": "electron-vite build && electron-builder",
+    "remotion:preview": "remotion preview remotion/index.tsx",
+    "remotion:render": "remotion render remotion/index.tsx"
+  },
+  "build": {
+    "appId": "com.mike.videogenerator",
+    "productName": "Mike Video Generator",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "remotion/**/*",
+      "shared/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.190",
+    "@remotion/media": "^4.0.190",
+    "@remotion/player": "^4.0.190",
+    "lucide-react": "^0.441.0",
+    "nanoid": "^5.0.7"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "electron": "^32.0.1",
+    "electron-builder": "^24.13.3",
+    "electron-vite": "^2.3.0",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.3"
+  }
+}
