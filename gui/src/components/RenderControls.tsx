@@ -38,7 +38,9 @@ export default function RenderControls({
             <div style={styles.progressArea}>
               <div style={styles.progressHeader}>
                 <Spinner />
-                <span style={styles.progressLabel}>Rendering...</span>
+                <span style={styles.progressLabel}>
+                  {renderProgress < 10 ? "Bundling & Rendering..." : "Rendering..."}
+                </span>
                 <span style={styles.progressPct}>{renderProgress}%</span>
               </div>
               <div style={styles.progressTrack}>
@@ -46,10 +48,17 @@ export default function RenderControls({
                   style={{
                     ...styles.progressFill,
                     width: `${renderProgress}%`,
-                    transition: "width 200ms ease",
+                    transition: "width 300ms cubic-bezier(0.4, 0, 0.2, 1)",
                   }}
                 />
               </div>
+              {renderProgress > 0 && (
+                <div style={styles.progressFrameInfo}>
+                  {renderProgress < 100
+                    ? `${renderProgress}% complete`
+                    : "Finalizing..."}
+                </div>
+              )}
             </div>
           )}
 
@@ -169,6 +178,12 @@ const styles: Record<string, React.CSSProperties> = {
     color: "var(--accent)",
     fontFamily: "monospace",
     marginLeft: "auto",
+  },
+  progressFrameInfo: {
+    fontSize: 10,
+    color: "var(--text-muted)",
+    marginTop: 2,
+    textAlign: "right" as const,
   },
   progressTrack: {
     height: 4,

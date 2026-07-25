@@ -162,21 +162,38 @@ ipcMain.handle(
     let stderrBuf = "";
     let stdoutBuf = "";
 
-    // Parse progress from stderr
-    const progressRegex = /Rendered\s+frame\s+(\d+)\/(\d+)/i;
-    const altRegex = /(\d+)\/(\d+)\s*frames\s*rendered/i;
+    // Parse progress from stderr — matches Remotion v4 output format
+    //   Bundling 6%
+    //   Rendered 0/450
+    //   Rendered 1/450, time remaining: 5m 17s
+    const renderRegex = /Rendered\s+(\d+)\/(\d+)/i;
+    const bundlingRegex = /Bundling\s+(\d+)%/i;
 
     proc.stderr?.on("data", (data: Buffer) => {
       const str = data.toString();
       stderrBuf += str;
 
       for (const line of str.split("\n")) {
-        const match = line.match(progressRegex) || line.match(altRegex);
-        if (match) {
-          const current = parseInt(match[1], 10);
-          const total = parseInt(match[2], 10);
-          const percent = Math.round((current / total) * 100);
-          mainWindow?.webContents.send("render-progress", percent);
+        // Check for frame render progress: Rendered 42/450
+        // Scale into 10-100% range so it smoothly follows bundling progress
+        const renderMatch = line.match(renderRegex);
+        if (renderMatch) {
+          const current = parseInt(renderMatch[1], 10);
+          const total = parseInt(renderMatch[2], 10);
+          if (total > 0) {
+            const percent = Math.round((current / total) * 90 + 10);
+            mainWindow?.webContents.send("render-progress", percent);
+          }
+          break;
+        }
+
+        // Check for bundling progress: Bundling 65%
+        const bundleMatch = line.match(bundlingRegex);
+        if (bundleMatch) {
+          const percent = parseInt(bundleMatch[1], 10);
+          // Scale bundling progress to 0-10% so the bar starts moving early
+          const scaledPercent = Math.round(percent * 0.1);
+          mainWindow?.webContents.send("render-progress", scaledPercent);
           break;
         }
       }
