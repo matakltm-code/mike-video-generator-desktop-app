@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { VideoConfig } from "../../../shared/VideoConfig";
 
 interface CanvasSettingsProps {
@@ -5,35 +6,81 @@ interface CanvasSettingsProps {
   onUpdate: (updates: Partial<VideoConfig["canvas"]>) => void;
 }
 
+interface CanvasPreset {
+  id: string;
+  name: string;
+  aspect: string;
+  width: number;
+  height: number;
+  description: string;
+  icon: string;
+  defaultDuration?: number;
+}
+
+const PRESETS: CanvasPreset[] = [
+  { id: "vertical", name: "Vertical", aspect: "9:16", width: 1080, height: 1920, description: "TikTok, Reels, Shorts", icon: "▯", defaultDuration: 15 },
+  { id: "landscape", name: "Landscape", aspect: "16:9", width: 1920, height: 1080, description: "YouTube, widescreen", icon: "▬", defaultDuration: 30 },
+  { id: "square", name: "Square", aspect: "1:1", width: 1080, height: 1080, description: "Instagram feed posts", icon: "⬜", defaultDuration: 15 },
+  { id: "portrait", name: "Portrait", aspect: "4:5", width: 1080, height: 1350, description: "Instagram portrait", icon: "▯", defaultDuration: 15 },
+  { id: "cinematic", name: "Cinematic", aspect: "21:9", width: 1920, height: 817, description: "Cinema widescreen", icon: "▄", defaultDuration: 30 },
+  { id: "standard", name: "Standard", aspect: "4:3", width: 1024, height: 768, description: "Classic / legacy", icon: "▭", defaultDuration: 30 },
+  { id: "short", name: "Short HD", aspect: "9:16", width: 720, height: 1280, description: "Lower-res vertical", icon: "▯", defaultDuration: 15 },
+];
+
 export default function CanvasSettings({ canvas, onUpdate }: CanvasSettingsProps) {
   const durationSec = canvas.durationInFrames / canvas.fps;
+  const [showPresets, setShowPresets] = useState(false);
 
   const handleDurationChange = (sec: number) => {
     const clamped = Math.max(1, Math.min(600, sec));
     onUpdate({ durationInFrames: Math.round(clamped * canvas.fps) });
   };
 
-  const applyPreset = () => {
+  const applyPreset = (preset: CanvasPreset) => {
     onUpdate({
-      width: 1080,
-      height: 1920,
-      fps: 30,
-      durationInFrames: 450,
-      backgroundColor: "#0a0a0a",
+      width: preset.width,
+      height: preset.height,
+      // Keep current FPS — only change dimensions
+      durationInFrames: (preset.defaultDuration ?? 15) * canvas.fps,
     });
+    setShowPresets(false);
   };
+
+  const currentPreset = PRESETS.find(
+    (p) => p.width === canvas.width && p.height === canvas.height
+  );
 
   return (
     <div>
       <div style={styles.header}>
         <h2 style={styles.title}>Canvas Settings</h2>
-        <button style={styles.presetBtn} onClick={applyPreset}>
+        <button
+          style={styles.presetBtn}
+          onClick={() => setShowPresets(!showPresets)}
+        >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2" />
           </svg>
-          9:16 Preset
+          {currentPreset ? currentPreset.name : "Presets"}
         </button>
       </div>
+
+      {/* Preset grid */}
+      {showPresets && (
+        <div style={styles.presetGrid}>
+          {PRESETS.map((preset) => {
+            const isActive = preset.width === canvas.width && preset.height === canvas.height;
+            return (
+              <PresetCardBtn
+                key={preset.id}
+                preset={preset}
+                isActive={isActive}
+                onClick={() => applyPreset(preset)}
+              />
+            );
+          })}
+        </div>
+      )}
 
       <div style={styles.card}>
         <div style={styles.grid}>
@@ -81,6 +128,7 @@ export default function CanvasSettings({ canvas, onUpdate }: CanvasSettingsProps
         <span style={styles.infoText}>
           <strong>{canvas.durationInFrames}</strong> frames &middot;{" "}
           <strong>{canvas.width}&times;{canvas.height}</strong> @ {canvas.fps}fps
+          &middot; {canvas.width > canvas.height ? "Landscape" : canvas.width < canvas.height ? "Portrait" : "Square"}
         </span>
       </div>
     </div>
@@ -121,6 +169,43 @@ function NumberInput({
   );
 }
 
+// ─── Hover-aware preset card ──────────────────────────────────────────
+
+function PresetCardBtn({
+  preset,
+  isActive,
+  onClick,
+}: {
+  preset: CanvasPreset;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      style={{
+        ...styles.presetCard,
+        ...(isActive ? styles.presetCardActive : {}),
+        ...(hovered && !isActive ? { borderColor: "var(--accent)" as string } : {}),
+      }}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <span style={styles.presetIcon}>{preset.icon}</span>
+      <div style={styles.presetInfo}>
+        <span style={styles.presetName}>{preset.name}</span>
+        <span style={styles.presetAspect}>{preset.aspect}</span>
+      </div>
+      <span style={styles.presetRes}>
+        {preset.width}&times;{preset.height}
+      </span>
+      <span style={styles.presetDesc}>{preset.description}</span>
+    </button>
+  );
+}
+
 // ─── Styles ───────────────────────────────────────────────────────────
 
 const styles: Record<string, React.CSSProperties> = {
@@ -128,7 +213,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 16,
   },
   title: {
     fontSize: 20,
@@ -149,6 +234,63 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 500,
     cursor: "pointer",
     transition: "all var(--transition)",
+  },
+  presetGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+    gap: 10,
+    marginBottom: 20,
+  },
+  presetCard: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    padding: "14px 16px",
+    border: "1px solid var(--border-color)",
+    borderRadius: "var(--radius-md)",
+    background: "var(--bg-secondary)",
+    cursor: "pointer",
+    transition: "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
+    textAlign: "left" as const,
+    alignItems: "flex-start",
+  },
+  presetCardActive: {
+    borderColor: "var(--accent)",
+    background: "var(--accent-bg)",
+  },
+  presetIcon: {
+    fontSize: 20,
+    color: "var(--text-muted)",
+    marginBottom: 4,
+  },
+  presetInfo: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    width: "100%",
+  },
+  presetName: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: "var(--text-primary)",
+  },
+  presetAspect: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: "var(--accent)",
+    padding: "1px 8px",
+    borderRadius: 999,
+    background: "var(--accent-bg)",
+  },
+  presetRes: {
+    fontSize: 12,
+    color: "var(--text-muted)",
+    fontFamily: "monospace",
+  },
+  presetDesc: {
+    fontSize: 11,
+    color: "var(--text-muted)",
+    marginTop: 2,
   },
   card: {
     background: "var(--bg-secondary)",
