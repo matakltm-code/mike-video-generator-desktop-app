@@ -136,7 +136,8 @@ ipcMain.handle(
       ".bin",
       isWin ? "remotion.cmd" : "remotion"
     );
-    const remotionEntry = path.join(__dirname, "../remotion/index.tsx");
+    // cwd is app.getAppPath() (project root), so relative path resolves correctly
+    const remotionEntry = "remotion/index.tsx";
 
     const proc = spawn(
       remotionBin,
