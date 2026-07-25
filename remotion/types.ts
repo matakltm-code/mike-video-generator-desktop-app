@@ -5,4 +5,5 @@ export type {
   VisualElement,
   TextElement,
   ImageElement,
+  SceneBackground,
 } from "../shared/VideoConfig";

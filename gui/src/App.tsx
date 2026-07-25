@@ -6,6 +6,7 @@ import CanvasSettings from "./components/CanvasSettings";
 import AssetUploader from "./components/AssetUploader";
 import ElementEditor from "./components/ElementEditor";
 import RenderControls from "./components/RenderControls";
+import TemplateSelector from "./components/TemplateSelector";
 
 let elementCounter = 0;
 function generateId(prefix: string): string {
@@ -19,7 +20,7 @@ export default function App() {
   const [renderProgress, setRenderProgress] = useState(0);
   const [renderOutputPath, setRenderOutputPath] = useState<string | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"settings" | "elements" | "assets">("settings");
+  const [activeTab, setActiveTab] = useState<"templates" | "settings" | "elements" | "assets">("templates");
 
   const { selectFile, saveDialog, startRender, cancelRender, setupRenderListeners } = useElectron();
 
@@ -46,6 +47,14 @@ export default function App() {
     });
     return cleanup;
   }, [setupRenderListeners]);
+
+  // ── Template helper ─────────────────────────────────────────────────
+
+  const loadTemplate = useCallback((config: VideoConfig) => {
+    setConfig(config);
+    setActiveTab("elements");
+    elementCounter = 0;
+  }, []);
 
   // ── Canvas helpers ──────────────────────────────────────────────────
 
@@ -239,6 +248,18 @@ export default function App() {
             <button
               style={{
                 ...styles.tabButton,
+                ...(activeTab === "templates" ? styles.tabActive : {}),
+              }}
+              onClick={() => setActiveTab("templates")}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" />
+              </svg>
+              <span style={styles.tabLabel}>Templates</span>
+            </button>
+            <button
+              style={{
+                ...styles.tabButton,
                 ...(activeTab === "settings" ? styles.tabActive : {}),
               }}
               onClick={() => setActiveTab("settings")}
@@ -277,6 +298,10 @@ export default function App() {
 
         {/* Content panel */}
         <section style={styles.content}>
+          {activeTab === "templates" && (
+            <TemplateSelector onSelectTemplate={loadTemplate} />
+          )}
+
           {activeTab === "settings" && (
             <CanvasSettings
               canvas={config.canvas}

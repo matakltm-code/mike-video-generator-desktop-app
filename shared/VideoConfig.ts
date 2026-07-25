@@ -9,11 +9,23 @@ export interface VideoConfig {
     fps: number;
     durationInFrames: number;
     backgroundColor: string;
+    /**
+     * Optional scene backgrounds for multi-scene templates.
+     * When present, the composition renders each scene as a colored
+     * fullscreen div wrapped in a <Sequence>. The first scene starts
+     * at frame 0. The final scene extends to `durationInFrames`.
+     */
+    scenes?: SceneBackground[];
   };
   tracks: {
     audio: AudioTrack[];
     elements: VisualElement[];
   };
+}
+
+export interface SceneBackground {
+  from: number;
+  color: string;
 }
 
 export interface AudioTrack {
@@ -101,3 +113,16 @@ export const DEFAULT_CONFIG: VideoConfig = {
     elements: [],
   },
 };
+
+// ─── Template definition ──────────────────────────────────────────────
+
+export interface VideoTemplate {
+  id: string;
+  name: string;
+  description: string;
+  duration: number; // seconds
+  category: "Branding" | "Product" | "Social" | "Educational";
+  color: string; // preview color
+  icon: string; // emoji icon for the card
+  generate: (overrides?: Record<string, string>) => VideoConfig;
+}
