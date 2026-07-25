@@ -7,6 +7,7 @@ import AssetUploader from "./components/AssetUploader";
 import ElementEditor from "./components/ElementEditor";
 import RenderControls from "./components/RenderControls";
 import TemplateSelector from "./components/TemplateSelector";
+import VideoPreview from "./components/VideoPreview";
 
 let elementCounter = 0;
 function generateId(prefix: string): string {
@@ -21,6 +22,7 @@ export default function App() {
   const [renderOutputPath, setRenderOutputPath] = useState<string | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"templates" | "settings" | "elements" | "assets">("templates");
+  const [showPreview, setShowPreview] = useState(true);
 
   const { selectFile, saveDialog, startRender, cancelRender, setupRenderListeners } = useElectron();
 
@@ -229,15 +231,30 @@ export default function App() {
             </p>
           </div>
         </div>
-        <RenderControls
-          config={config}
-          renderState={renderState}
-          renderProgress={renderProgress}
-          renderOutputPath={renderOutputPath}
-          renderError={renderError}
-          onStartRender={handleStartRender}
-          onCancelRender={handleCancelRender}
-        />
+        <div style={styles.headerCenter} />
+        <div style={styles.headerActions}>
+          <button
+            style={{
+              ...styles.previewToggle,
+              ...(showPreview ? styles.previewToggleActive : {}),
+            }}
+            onClick={() => setShowPreview(!showPreview)}
+            title={showPreview ? "Hide preview" : "Show preview"}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+          </button>
+          <RenderControls
+            config={config}
+            renderState={renderState}
+            renderProgress={renderProgress}
+            renderOutputPath={renderOutputPath}
+            renderError={renderError}
+            onStartRender={handleStartRender}
+            onCancelRender={handleCancelRender}
+          />
+        </div>
       </header>
 
       {/* Main content */}
@@ -337,6 +354,9 @@ export default function App() {
             />
           )}
         </section>
+
+        {/* Video Preview panel */}
+        <VideoPreview config={config} visible={showPreview} />
       </div>
     </div>
   );
@@ -377,6 +397,32 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     gap: 12,
+  },
+  headerCenter: {
+    flex: 1,
+  },
+  headerActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  },
+  previewToggle: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 34,
+    height: 34,
+    border: "1px solid var(--border-color)",
+    borderRadius: "var(--radius-sm)",
+    background: "var(--bg-tertiary)",
+    color: "var(--text-muted)",
+    cursor: "pointer",
+    transition: "all var(--transition)",
+  },
+  previewToggleActive: {
+    background: "var(--accent-bg)",
+    color: "var(--accent)",
+    borderColor: "var(--accent)",
   },
   title: {
     fontSize: 16,
