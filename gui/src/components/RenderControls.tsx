@@ -137,6 +137,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     gap: 12,
     flexShrink: 0,
+    position: "relative" as const,
   },
   statusArea: {
     display: "flex",

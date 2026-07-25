@@ -128,19 +128,25 @@ ipcMain.handle(
     const propsPath = path.join(tempDir, "props.json");
     fs.writeFileSync(propsPath, JSON.stringify(configCopy, null, 2));
 
-    // Spawn Remotion CLI
-    const npxCmd = process.platform === "win32" ? "npx.cmd" : "npx";
+    // Spawn Remotion CLI — use local binary directly for reliability
     const isWin = process.platform === "win32";
+    const remotionBin = path.join(
+      app.getAppPath(),
+      "node_modules",
+      ".bin",
+      isWin ? "remotion.cmd" : "remotion"
+    );
+    const remotionEntry = path.join(__dirname, "../remotion/index.tsx");
 
     const proc = spawn(
-      npxCmd,
+      remotionBin,
       [
-        "remotion",
         "render",
-        path.join(__dirname, "../remotion/index.tsx"),
+        remotionEntry,
         "MikeVideo",
         outputPath,
-        `--props=${propsPath}`,
+        "--props",
+        propsPath,  // separate arg avoids shell escaping on Windows paths
         "--log=verbose",
       ],
       {
@@ -153,6 +159,7 @@ ipcMain.handle(
     activeRenderProcess = proc;
 
     let stderrBuf = "";
+    let stdoutBuf = "";
 
     // Parse progress from stderr
     const progressRegex = /Rendered\s+frame\s+(\d+)\/(\d+)/i;
@@ -174,6 +181,10 @@ ipcMain.handle(
       }
     });
 
+    proc.stdout?.on("data", (data: Buffer) => {
+      stdoutBuf += data.toString();
+    });
+
     return new Promise<void>((resolve, reject) => {
       proc.on("close", (code) => {
         activeRenderProcess = null;
@@ -181,15 +192,27 @@ ipcMain.handle(
           mainWindow?.webContents.send("render-complete", outputPath);
           resolve();
         } else {
-          const errorTail = stderrBuf.split("\n").slice(-15).join("\n");
-          mainWindow?.webContents.send("render-error", errorTail || `Render failed with exit code ${code}`);
+          // Build a detailed error message from both stderr and stdout
+          const stderrTail = stderrBuf.trim().split("\n").slice(-20).join("\n");
+          const stdoutTail = stdoutBuf.trim().split("\n").slice(-10).join("\n");
+          const combined = [
+            stderrTail ? `stderr:\n${stderrTail}` : "",
+            stdoutTail ? `stdout:\n${stdoutTail}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n\n");
+          const errorMsg = combined || `Render failed with exit code ${code}`;
+          mainWindow?.webContents.send("render-error", errorMsg);
           reject(new Error(`Render failed with code ${code}`));
         }
       });
 
       proc.on("error", (err) => {
         activeRenderProcess = null;
-        mainWindow?.webContents.send("render-error", err.message);
+        const fullMsg = [err.message, stderrBuf.trim(), stdoutBuf.trim()]
+          .filter(Boolean)
+          .join("\n");
+        mainWindow?.webContents.send("render-error", fullMsg);
         reject(err);
       });
     });
