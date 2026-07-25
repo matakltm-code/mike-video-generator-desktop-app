@@ -2,7 +2,7 @@
 
 A Windows desktop application for creating videos with text overlays, images, and background music — powered by [Remotion](https://remotion.dev) and [Electron](https://www.electronjs.org/).
 
-> **Status:** Blueprint phase — the project plan is complete but no source code has been scaffolded yet. See [`docs/project-plan.md`](docs/project-plan.md) for the full 4-hour implementation sprint.
+> **Status:** Blueprint phase — the project plan is complete but no source code has been scaffolded yet. See [`docs/project-plan.md`](docs/project-plan.md) for the full project plan.
 
 ## Overview
 
@@ -32,7 +32,7 @@ Communication between the GUI and the render pipeline flows through typed Electr
 
 ## Getting Started
 
-> ⚠️ The project is currently in the planning phase. Once the scaffolding in Hour 1 of the sprint plan is completed, run:
+> ⚠️ The project is currently in the planning phase. Once the scaffolding is completed, run:
 
 ```bash
 # Install dependencies
@@ -50,7 +50,7 @@ npm run dist
 
 ## Project Plan
 
-See [`docs/project-plan.md`](docs/project-plan.md) for the full 4-hour implementation sprint plan, including detailed architecture diagrams, IPC data flow, Remotion component patterns, and common bug preventions.
+See [`docs/project-plan.md`](docs/project-plan.md) for the full project plan, including architecture, configuration schema, component reference, and common pitfalls.
 
 ## License
 
