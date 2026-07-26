@@ -79,9 +79,22 @@ ipcMain.handle("select-file", async (_event, filters?: { name: string; extension
   return destPath;
 });
 
+/** Format current datetime as YYYY-MM-DD_HH-MM-SS for file names */
+function timestampSuffix(): string {
+  const d = new Date();
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+}
+
 ipcMain.handle("save-dialog", async (_event, defaultName?: string) => {
+  // Inject date-time stamp into the suggested file name
+  const base = defaultName ?? "mike-video.mp4";
+  const ext = path.extname(base) || ".mp4";
+  const name = path.basename(base, ext);
+  const suggestedName = `${name}_${timestampSuffix()}${ext}`;
+
   const result = await dialog.showSaveDialog(mainWindow!, {
-    defaultPath: path.join(app.getPath("desktop"), defaultName ?? "mike-video.mp4"),
+    defaultPath: path.join(app.getPath("desktop"), suggestedName),
     filters: [{ name: "MP4 Video", extensions: ["mp4"] }],
   });
 
