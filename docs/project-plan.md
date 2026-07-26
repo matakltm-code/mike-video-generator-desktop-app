@@ -1,6 +1,8 @@
 # Mike Video Generator — Project Plan
 
-A Windows desktop application for composing short-form videos with text overlays, images, and background music, powered by [Remotion](https://remotion.dev) and [Electron](https://www.electronjs.org/).
+A Windows desktop application for composing short-form videos with **templates**, **text overlays**, **images**, **background music**, a **live preview**, and **7 canvas presets** — powered by [Remotion](https://remotion.dev) and [Electron](https://www.electronjs.org/).
+
+**Status:** 🟢 Active development — the project is fully scaffolded, all MVP features are implemented, and iteration continues.
 
 ---
 
@@ -11,80 +13,84 @@ A Windows desktop application for composing short-form videos with text overlays
 3. [Architecture](#3-architecture)
 4. [Configuration Schema](#4-configuration-schema)
 5. [Component Reference](#5-component-reference)
-6. [Packaging & Distribution](#6-packaging--distribution)
-7. [Common Pitfalls & Solutions](#7-common-pitfalls--solutions)
+6. [Template System](#6-template-system)
+7. [Stock Media Catalog](#7-stock-media-catalog)
+8. [Packaging & Distribution](#8-packaging--distribution)
+9. [Common Pitfalls & Solutions](#9-common-pitfalls--solutions)
 
 ---
 
 ## 1. Product Requirements
 
-### 1.1 Scope (MVP)
+### 1.1 Implemented Features
 
-| In Scope | Cut for MVP |
-|---|---|
-| Single composition editor (one video at a time) | Multi-project library / save-load projects |
-| Canvas: custom width/height, background color, 9:16 preset | Gradient/animated backgrounds |
-| Text elements with 3 animation presets (fade, slide-up, scale-in) | Custom keyframe curves / Bézier editors |
-| Image overlays with absolute positioning + opacity | Video overlays / green screen |
-| Single background music track (loop or trim) | Multi-layer audio mixing / voiceover recording |
-| Local MP4 render via Remotion CLI | Real-time timeline scrubbing preview |
-| Windows-only packaging via Electron Builder | macOS / Linux builds |
-| Asset upload via native file picker | Drag-and-drop from browser / cloud imports |
+| Feature | Status | Details |
+|---|---|---|
+| Canvas configurator (width, height, FPS, duration, bg color) | ✅ Done | Configurable via number inputs |
+| **7 canvas format presets** | ✅ Done | Vertical (9:16), Landscape (16:9), Square (1:1), Portrait (4:5), Cinematic (21:9), Standard (4:3), Short HD (9:16) |
+| **10 video templates across 4 categories** | ✅ Done | Branding (3), Product (2), Social (3), Educational (2) |
+| Text elements with 3 animation presets | ✅ Done | FadeIn, SlideUp, ScaleIn |
+| Image overlays (upload + positioning + opacity + sizing) | ✅ Done | Native file picker via Electron |
+| Audio tracks (multiple, loop, volume, trim) | ✅ Done | Multiple simultaneous tracks |
+| **Live video preview (Remotion Player)** | ✅ Done | Play/Pause/Seek/Loop in-app |
+| **Date-stamped save file names** | ✅ Done | `mike-video_2026-07-26_21-53-43.mp4` |
+| Asset upload via native file picker | ✅ Done | Copies to `userData/assets/` |
+| MP4 render with progress tracking (bundling + frames) | ✅ Done | 0–100% progress bar, cancel support |
+| FFmpeg detection on startup | ✅ Done | Error dialog if missing |
+| **Stock media catalog (36 images + 8 audio tracks)** | ✅ Done | picsum.photos + SoundHelix |
+| Electron+Remotion integration | ✅ Done | Works over IPC + CLI spawn |
 
-### 1.2 Core Features
+### 1.2 Planned / Future
 
-#### A. Canvas Configurator
-- Configure width, height, FPS (30 default), duration (seconds), and background hex color
-- One-click **9:16 preset** set to 1080×1920, 30fps, 15 seconds
-
-#### B. Dynamic Timeline
-- Track-based JSON schema where each element has `from` (frame start), `durationInFrames`, `type`, and `animation` properties
-- Remotion's `<Sequence>` and `interpolate()` drive all motion — no custom animation engine needed
-
-#### C. Asset Upload Management
-- Electron `dialog.showOpenDialog` selects local files via native file picker
-- Main process copies assets into a temporary directory inside the app's user data path
-- Remotion references assets via absolute `file://` paths passed through JSON props
-
-#### D. Local Rendering Pipeline
-- Electron Main spawns `npx remotion render` as a child process
-- CLI stderr is parsed for progress percentages and piped back to the renderer via IPC
-- Output MP4 is written to a user-selected directory
+| Feature | Priority | Notes |
+|---|---|---|
+| Media Library browser UI | High | Wire `stock-media.ts` into a browseable component with one-click add |
+| Drag-and-drop timeline | Medium | Scene reordering, element timeline scrubbing |
+| Keyboard shortcuts | Medium | Ctrl+S save, Ctrl+Z undo, Ctrl+Shift+R render |
+| Save/load project files | Medium | JSON project persistence |
+| Multi-track audio mixing | Low | Volume envelopes, crossfades |
+| Video overlays | Low | MP4 clips as visual elements |
+| macOS / Linux builds | Low | Requires platform-specific testing |
 
 ---
 
 ## 2. User Experience & Workflow
 
-### 2.1 Step-by-Step User Journey
+### 2.1 User Journey
 
 ```
 LAUNCH APP
-└─> Electron window opens. GUI shows "New Video" canvas (1080×1920 black).
+└─> Electron window opens. Templates tab is active.
 
-STEP 1: CANVAS SETUP
-└─> User clicks "9:16 Vertical" preset. Canvas updates to 1080×1920.
-└─> User sets duration to 10s (300 frames). Background set to #0a0a0a.
+STEP 1: CHOOSE TEMPLATE (optional)
+└─> 10 template cards shown. Each shows name, category, duration, description, preview color.
+└─> User clicks a template → canvas + elements are populated with placeholder content.
+└─> App auto-switches to Elements tab for editing.
 
-STEP 2: ADD ASSETS
-└─> User clicks "Upload Logo" → Native file picker opens.
-└─> User selects logo.png. File copied to app assets dir.
-└─> Thumbnail appears in asset panel. User positions it (x: 40, y: 40).
-└─> User clicks "Add Background Music" → selects beat.mp3.
-└─> Music appears in audio track; user checks "Loop" checkbox.
+STEP 2: CONFIGURE CANVAS
+└─> Switch to Canvas tab.
+└─> Click "Presets" to reveal 7 format presets. Click one → dimensions update.
+└─> Or type custom width/height, adjust FPS, duration, and background color.
 
-STEP 3: ADD TEXT
-└─> User clicks "Add Text". Default text "Your Headline" appears.
-└─> User edits text, sets font size (72px), color (#ffffff).
-└─> User sets Start Time: 1.0s, Duration: 3.0s.
-└─> User selects Animation: "Slide Up".
+STEP 3: EDIT ELEMENTS
+└─> Switch to Elements tab.
+└─> Click text elements to edit text content, font, size, color, position, animation.
+└─> Click "Add Text" to create a new text overlay.
+└─> Click "Add Image" → native file picker opens → image appears in list.
+└─> Click "Add Audio" → file picker → audio track appears with volume/timing controls.
+└─> Watch the live preview (right panel) update in real-time.
 
-STEP 4: RENDER
-└─> User clicks "Render MP4".
-└─> GUI state locks inputs. Progress bar appears at 0%.
-└─> Main process spawns Remotion CLI.
-└─> Stderr parsed: "Rendered frame 150/300" → Progress bar updates to 50%.
-└─> Render completes. "Save File" dialog opens. User saves to Desktop.
-└─> Toast notification: "Video saved to C:\Users\Mike\Desktop\video.mp4"
+STEP 4: PREVIEW
+└─> Click the play button in the header to toggle the preview panel.
+└─> Click play on the preview to watch the full video with all animations.
+└─> Scrub the timeline to inspect specific frames.
+
+STEP 5: RENDER
+└─> Click "Render MP4" button.
+└─> Save dialog appears with timestamped filename: mike-video_2026-07-26_21-53-43.mp4
+└─> Progress bar shows bundling (0–10%) then rendering frames (10–100%).
+└─> Render completes. Success state shows output path.
+└─> Or click "Cancel" to abort mid-render.
 ```
 
 ### 2.2 UI State Machine
@@ -92,10 +98,31 @@ STEP 4: RENDER
 | State | Renderer UI | Main Process |
 |---|---|---|
 | `IDLE` | All inputs editable. Render button active. | Waiting for IPC. |
-| `VALIDATING` | "Preparing assets..." spinner. | Copies files, validates paths, writes JSON. |
-| `RENDERING` | Progress bar (0–100%). Cancel button shown. | `spawn` active. Parsing stderr. |
-| `SUCCESS` | "Open File" button + path display. | Process exited code 0. |
-| `ERROR` | Red toast with stderr tail. | Process exited non-zero. |
+| `VALIDATING` | "Preparing assets..." spinner. | Copies assets to temp dir, writes props JSON. |
+| `RENDERING` | Progress bar (0–100%). Cancel button shown. | `spawn` active. Parsing stderr for progress. |
+| `SUCCESS` | Output path displayed. "Render" available again. | Process exited code 0. |
+| `ERROR` | Red error box with stderr tail. | Process exited non-zero. |
+
+### 2.3 App Layout
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Header: [Logo] Mike Video Generator   [Preview toggle] [Render] │
+│          1080×1920 · 15s · 8 elements · 1 track                │
+├──────┬────────────────────────────────────┬──────────────────┤
+│      │                                    │                  │
+│ Side │  Content Panel                     │  Preview Panel   │
+│ bar  │  [Templates] [Canvas] [Elements]   │  (toggleable)    │
+│      │  [Assets]                          │  ┌──────────┐   │
+│      │                                    │  │ ▶ Play   │   │
+│      │  Active tab renders here           │  │ ░░░░░░░  │   │
+│      │                                    │  │ 42/450   │   │
+│      │                                    │  └──────────┘   │
+│      │                                    │                  │
+├──────┴────────────────────────────────────┴──────────────────┤
+│  Status bar (implicit)                                       │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -103,101 +130,145 @@ STEP 4: RENDER
 
 ### 3.1 System Overview
 
+```mermaid
+graph TD
+    subgraph Renderer["Electron Renderer (React + Vite)"]
+        App["App.tsx<br/>VideoConfig state"]
+        CS["CanvasSettings.tsx<br/>7 presets"]
+        TS["TemplateSelector.tsx<br/>10 templates"]
+        EE["ElementEditor.tsx<br/>Text/Image/Audio"]
+        VP["VideoPreview.tsx<br/>@remotion/player"]
+        RC["RenderControls.tsx<br/>Progress + Cancel"]
+        AU["AssetUploader.tsx<br/>List + manage"]
+        App --> CS
+        App --> TS
+        App --> EE
+        App --> VP
+        App --> RC
+        App --> AU
+    end
+
+    subgraph Preload["electron/preload.ts"]
+        CB["contextBridge<br/>window.electronAPI"]
+    end
+
+    subgraph Main["Electron Main (Node.js)"]
+        IPC["IPC Handlers"]
+        FF["FFmpeg detection"]
+        SP["spawn remotion CLI"]
+        IPC -->|select-file| FP["dialog.showOpenDialog<br/>copy to userData/assets/"]
+        IPC -->|save-dialog| SD["dialog.showSaveDialog<br/>timestamped filename"]
+        IPC -->|start-render| SP
+        IPC -->|cancel-render| KP["kill process tree"]
+    end
+
+    subgraph Remotion["Remotion Project"]
+        ROOT["Root.tsx<br/>Composition id='MikeVideo'"]
+        MC["MainComposition.tsx<br/>Scenes + Audio + Elements"]
+        TE["TextElement.tsx<br/>3 animations"]
+        IE["ImageElement.tsx<br/>fade-in"]
+        AT["AudioTrack.tsx"]
+        ROOT --> MC
+        MC --> TE
+        MC --> IE
+        MC --> AT
+    end
+
+    Renderer -->|IPC invoke| Main
+    Main -->|IPC send| Renderer
+    SP -->|spawn| Remotion
+    SP -->|stderr progress| Renderer
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│  ELECTRON RENDERER (React GUI)                                               │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
-│  │ CanvasConfig │  │ AssetPanel   │  │ TimelineForm │  │ RenderControls   │  │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘  │
-│         └──────────────────┴─────────────────┴─────────────────┘            │
-│                              │                                               │
-│                              ▼ IPC (contextBridge)                           │
-│  window.electronAPI.selectFile()   window.electronAPI.startRender(config)    │
-│                              │                                               │
-└──────────────────────────────┼───────────────────────────────────────────────┘
-                               │
-┌──────────────────────────────┼───────────────────────────────────────────────┐
-│  ELECTRON MAIN (Node.js)     │                                               │
-│                              ▼                                               │
-│  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │  IPC Handlers                                                        │   │
-│  │  ├── select-file → dialog.showOpenDialog → copy to appData/assets   │   │
-│  │  └── start-render → write config.json → spawn remotion CLI          │   │
-│  │                                                                      │   │
-│  │  child_process.spawn('npx', ['remotion', 'render', ...])            │   │
-│  │       │                                                              │   │
-│  │       ▼ stderr                                                       │   │
-│  │  Parse "Rendered frame X/Y" → win.webContents.send('render-progress')│   │
-│  └──────────────────────────────────────────────────────────────────────┘   │
-│                              │                                               │
-└──────────────────────────────┼───────────────────────────────────────────────┘
-                               │
-┌──────────────────────────────┼───────────────────────────────────────────────┐
-│  REMOTION PROJECT (React)    │                                               │
-│                              ▼                                               │
-│  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │  Root.tsx registers <Composition> with id="MikeVideo"               │   │
-│  │                                                                      │   │
-│  │  MainComposition.tsx receives props={config} via --props flag        │   │
-│  │  ├── Maps config.tracks.elements → <TextElement />, <ImageElement /> │   │
-│  │  ├── Maps config.tracks.audio → <Audio /> components                │   │
-│  │  └── Background color from config.canvas.backgroundColor            │   │
-│  └──────────────────────────────────────────────────────────────────────┘   │
-│                              │                                               │
-│                              ▼                                               │
-│                    FFmpeg encodes frames → out/video.mp4                     │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
 
-### 3.2 IPC Communication
-
-The preload script exposes a typed API via `contextBridge`:
-
-| Channel | Direction | Purpose |
-|---|---|---|
-| `select-file` | Renderer → Main | Open native file picker |
-| `save-dialog` | Renderer → Main | Open native save dialog (output path) |
-| `start-render` | Renderer → Main | Begin video render with config |
-| `cancel-render` | Renderer → Main | Kill the active render process |
-| `render-progress` | Main → Renderer | Percentage update (0–100) |
-| `render-complete` | Main → Renderer | Render finished successfully |
-| `render-error` | Main → Renderer | Render failed with error details |
-
-### 3.3 Directory Layout
+### 3.2 Directory Layout
 
 ```
 mike-video-generator/
 ├── electron/
-│   ├── main.ts               # Electron main process, IPC handlers
-│   ├── preload.ts             # contextBridge API exposure
-│   └── vite.config.ts
+│   ├── main.ts               # App lifecycle, IPC handlers, FFmpeg check, Remotion spawn
+│   ├── preload.ts             # contextBridge — typed API surface
+│   └── vite.config.ts         # Electron Vite config
+│
 ├── gui/
 │   ├── src/
-│   │   ├── main.tsx           # React entry point
-│   │   ├── App.tsx            # Root component, state management
+│   │   ├── main.tsx           # React entry point + CSS variables (dark theme)
+│   │   ├── App.tsx            # Root — VideoConfig state, tabs, layout
 │   │   ├── components/
-│   │   │   ├── CanvasSettings.tsx
-│   │   │   ├── ElementEditor.tsx
-│   │   │   ├── AssetUploader.tsx
-│   │   │   └── RenderControls.tsx
+│   │   │   ├── CanvasSettings.tsx    # Canvas config + 7-format preset grid
+│   │   │   ├── ElementEditor.tsx     # Text/Image/Audio CRUD
+│   │   │   ├── AssetUploader.tsx     # Uploaded asset manager
+│   │   │   ├── RenderControls.tsx    # Render button, progress bar, cancel, output
+│   │   │   ├── TemplateSelector.tsx  # Template catalog (10 cards)
+│   │   │   └── VideoPreview.tsx      # Live @remotion/player panel
+│   │   ├── templates/
+│   │   │   ├── index.ts             # TEMPLATES array (registry)
+│   │   │   ├── helpers.ts           # Shared txt() helper
+│   │   │   ├── brand-story.ts
+│   │   │   ├── feature-showcase.ts
+│   │   │   ├── quick-announcement.ts
+│   │   │   ├── tips-listicle.ts
+│   │   │   ├── sales-pitch.ts
+│   │   │   ├── event-countdown.ts
+│   │   │   ├── how-to-tutorial.ts
+│   │   │   ├── team-intro.ts
+│   │   │   ├── year-in-review.ts
+│   │   │   └── holiday-greeting.ts
+│   │   ├── data/
+│   │   │   └── stock-media.ts       # 36 images + 8 audio tracks (categorized)
 │   │   └── hooks/
-│   │       └── useElectron.ts # Typed wrapper for window.electronAPI
+│   │       └── useElectron.ts       # Typed React wrapper for electronAPI
 │   └── index.html
+│
 ├── remotion/
-│   ├── index.tsx              # registerRoot entry
-│   ├── Root.tsx               # Composition registration
-│   ├── types.ts               # Re-exports from shared
+│   ├── index.tsx              # registerRoot(Root)
+│   ├── Root.tsx               # <Composition id="MikeVideo" ...>
+│   ├── types.ts               # Re-exports from shared/VideoConfig.ts
 │   ├── compositions/
-│   │   └── MainComposition.tsx # Root composition component
+│   │   └── MainComposition.tsx # Scene backgrounds, Audio, Text/Image elements
 │   └── components/
-│       ├── TextElement.tsx     # Animated text overlay
-│       ├── ImageElement.tsx    # Image overlay
-│       └── AudioTrack.tsx     # Background audio
+│       ├── TextElement.tsx     # Animated text (fadeIn, slideUp, scaleIn)
+│       ├── ImageElement.tsx    # Image overlay (fade-in, objectFit)
+│       └── AudioTrack.tsx     # <Audio> wrapper
+│
 ├── shared/
-│   └── VideoConfig.ts          # Single source-of-truth types
+│   └── VideoConfig.ts          # Single source-of-truth — types, defaults, ElectronAPI
+│
+├── out/
+│   ├── main/index.js          # Built main process
+│   └── renderer/              # Built renderer bundle
+│
 ├── package.json
 ├── electron.vite.config.ts
 └── remotion.config.ts
+```
+
+### 3.3 IPC Communication
+
+The preload script exposes a typed API via `contextBridge`:
+
+| Channel | Direction | Payload | Purpose |
+|---|---|---|---|
+| `select-file` | Renderer → Main | `FileFilter[]` | Open native file picker, copy to `userData/assets/` |
+| `save-dialog` | Renderer → Main | `string?` (defaultName) | Open save dialog, returns chosen path |
+| `start-render` | Renderer → Main | `(VideoConfig, outputPath)` | Begin video render |
+| `cancel-render` | Renderer → Main | — | Kill active render + process tree |
+| `render-progress` | Main → Renderer | `number` (0–100) | Bundling (0–10%) or frame progress (10–100%) |
+| `render-complete` | Main → Renderer | `string` (outputPath) | Render finished successfully |
+| `render-error` | Main → Renderer | `string` (error details) | Render failed |
+
+### 3.4 ElectronAPI Surface (Typed)
+
+```typescript
+interface ElectronAPI {
+  selectFile: (filters?: FileFilter[]) => Promise<string | null>;
+  saveDialog: (defaultName?: string) => Promise<string | null>;
+  startRender: (config: VideoConfig, outputPath: string) => Promise<void>;
+  cancelRender: () => Promise<void>;
+  onRenderProgress: (callback: (percent: number) => void) => void;
+  onRenderComplete: (callback: (outputPath: string) => void) => void;
+  onRenderError: (callback: (error: string) => void) => void;
+  removeAllListeners: (channel: string) => void;
+}
 ```
 
 ---
@@ -207,6 +278,8 @@ mike-video-generator/
 The JSON schema below is the **single source of truth** — the GUI builds it, the Main process writes it to disk, and Remotion consumes it via the `--props` flag.
 
 ```typescript
+// shared/VideoConfig.ts
+
 export interface VideoConfig {
   version: "1.0";
   canvas: {
@@ -214,7 +287,8 @@ export interface VideoConfig {
     height: number;           // e.g., 1920
     fps: number;              // e.g., 30
     durationInFrames: number; // fps × durationSeconds
-    backgroundColor: string;  // hex, e.g., "#0a0a0a"
+    backgroundColor: string;  // hex fallback, e.g., "#0a0a0a"
+    scenes?: SceneBackground[]; // optional multi-scene backgrounds
   };
   tracks: {
     audio: AudioTrack[];
@@ -222,20 +296,25 @@ export interface VideoConfig {
   };
 }
 
+export interface SceneBackground {
+  from: number;      // Start frame index
+  color: string;     // Background color for this scene segment
+}
+
 export interface AudioTrack {
   id: string;
-  src: string;                // Absolute file path
+  src: string;                // Absolute file path or URL
   from: number;               // Start frame
   durationInFrames: number;
-  volume?: number;            // 0.0–1.0
-  loop?: boolean;
+  volume?: number;            // 0.0–1.0 (default 1)
+  loop?: boolean;             // Loop playback
   trimBefore?: number;        // Frames to trim from start
   trimAfter?: number;         // Frames to trim from end
 }
 
 export type VisualElement = TextElement | ImageElement;
 
-interface BaseElement {
+export interface BaseElement {
   id: string;
   from: number;
   durationInFrames: number;
@@ -245,17 +324,17 @@ interface BaseElement {
 
 export interface TextElement extends BaseElement {
   type: "text";
-  text: string;
+  text: string;               // Supports \n (pre-wrap)
   style: {
     fontSize: number;
     color: string;
-    fontFamily: string;
+    fontFamily: string;       // e.g., "Arial, sans-serif"
     fontWeight?: number;
     textAlign?: "left" | "center" | "right";
   };
   animation?: {
     type: "fadeIn" | "slideUp" | "scaleIn";
-    durationInFrames: number;
+    durationInFrames: number; // e.g., 30 frames
   };
 }
 
@@ -270,302 +349,300 @@ export interface ImageElement extends BaseElement {
 }
 ```
 
+### 4.1 Default Config
+
+```typescript
+export const DEFAULT_CONFIG: VideoConfig = {
+  version: "1.0",
+  canvas: {
+    width: 1080,
+    height: 1920,
+    fps: 30,
+    durationInFrames: 450,    // 15 seconds
+    backgroundColor: "#0a0a0a",
+  },
+  tracks: {
+    audio: [],
+    elements: [],
+  },
+};
+```
+
+### 4.2 UI State Type
+
+```typescript
+export type RenderState = "IDLE" | "VALIDATING" | "RENDERING" | "SUCCESS" | "ERROR";
+```
+
 ---
 
 ## 5. Component Reference
 
-### 5.1 MainComposition — Root Composition
+### 5.1 CanvasSettings
 
-Dispatches audio and visual elements into Remotion `<Sequence>` wrappers.
+**File:** `gui/src/components/CanvasSettings.tsx`
 
-```tsx
-import { AbsoluteFill, Sequence } from "remotion";
-import { Audio } from "@remotion/media";
-import { VideoConfig } from "../types";
-import { TextElement } from "../components/TextElement";
-import { ImageElement } from "../components/ImageElement";
+Canvas configuration panel with:
+- **Width / Height** number inputs (locked aspect ratio is not enforced — fully independent)
+- **FPS** input (default 30)
+- **Duration** input in seconds (converted to frames internally, clamped 1–600s)
+- **Background Color** hex color picker
+- **Preset toggle** — reveals a grid of 7 format presets, each with icon, aspect ratio, resolution, and description
+- **PresetCardBtn** — a memoized sub-component with React `useState` for hover highlighting (consistent with TemplateSelector pattern)
+- Active preset detection by matching width + height exactly
+- Presets only set width/height/duration — FPS and background color are preserved
+- Info box shows current resolution, aspect ratio, orientation, and total frame count
 
-export const MainComposition: React.FC<VideoConfig> = (props) => {
-  return (
-    <AbsoluteFill style={{ backgroundColor: props.canvas.backgroundColor }}>
-      {props.tracks.audio.map((track) => (
-        <Audio
-          key={track.id}
-          src={track.src}
-          startFrom={track.trimBefore}
-          endAt={track.trimAfter}
-          volume={track.volume ?? 1}
-        />
-      ))}
+### 5.2 ElementEditor
 
-      {props.tracks.elements.map((el) => (
-        <Sequence key={el.id} from={el.from} durationInFrames={el.durationInFrames}>
-          {el.type === "text" && <TextElement element={el} fps={props.canvas.fps} />}
-          {el.type === "image" && <ImageElement element={el} />}
-        </Sequence>
-      ))}
-    </AbsoluteFill>
-  );
-};
-```
+**File:** `gui/src/components/ElementEditor.tsx`
 
-### 5.2 TextElement — Animated Text Overlay
+Element CRUD interface:
+- Filter chips to switch between **Text**, **Image**, and **Audio** views
+- **Add Text** button — creates a new TextElement with default values
+- **Add Image** button — triggers native file picker, creates ImageElement
+- **Add Audio** button — triggers native file picker, creates AudioTrack
+- Each element type has a dedicated card with configurable fields:
+  - **Text:** Content, font size, color, font family, weight, alignment, position X/Y, start time, duration, animation type + duration
+  - **Image:** Source path, position X/Y, width, height, object fit, opacity, start time, duration
+  - **Audio:** Source path, volume slider, loop checkbox, trim start/end (in seconds), start time
+- **Remove** button on each element
+- All time values are displayed in seconds and converted to frames internally
 
-Supports three animations via `useCurrentFrame` and `interpolate`:
+### 5.3 AssetUploader
 
-- **fadeIn** — opacity 0→1
-- **slideUp** — translateY 50px→0 + opacity 0→1
-- **scaleIn** — scale 0.5→1 + opacity 0→1
+**File:** `gui/src/components/AssetUploader.tsx`
 
-```tsx
-import { useCurrentFrame, interpolate, AbsoluteFill } from "remotion";
-import { TextElement as TextElementType } from "../types";
+Asset management panel:
+- Lists all current images and audio tracks
+- Shows thumbnails for images with source path, dimensions, and opacity
+- Shows audio tracks with source path, volume, and loop status
+- Add buttons for images and audio (same as ElementEditor)
+- Remove buttons for each asset
+- Inline editing for opacity, volume, loop, and position
 
-export const TextElement: React.FC<{
-  element: TextElementType;
-  fps: number;
-}> = ({ element }) => {
-  const frame = useCurrentFrame();
-  const { animation, style, position, opacity = 1 } = element;
+### 5.4 RenderControls
 
-  let animatedOpacity = opacity;
-  let transform = "translate(0,0) scale(1)";
+**File:** `gui/src/components/RenderControls.tsx`
 
-  if (animation && frame < animation.durationInFrames) {
-    const progress = interpolate(
-      frame,
-      [0, animation.durationInFrames],
-      [0, 1],
-      { extrapolateRight: "clamp" }
-    );
+Render lifecycle control:
+- **Render MP4** button (active only in `IDLE` and `SUCCESS` states)
+- Progress bar with percentage label
+- **Cancel** button (visible during `VALIDATING` and `RENDERING`)
+- **Output path** display on success (clickable)
+- **Error details** box on failure (scrollable stderr)
+- State transitions: IDLE → VALIDATING → RENDERING → SUCCESS/ERROR → IDLE
 
-    switch (animation.type) {
-      case "fadeIn":
-        animatedOpacity = progress * opacity;
-        break;
-      case "slideUp":
-        animatedOpacity = progress * opacity;
-        transform = `translateY(${interpolate(progress, [0, 1], [50, 0])}px)`;
-        break;
-      case "scaleIn":
-        animatedOpacity = progress * opacity;
-        transform = `scale(${interpolate(progress, [0, 1], [0.5, 1])})`;
-        break;
-    }
-  }
+### 5.5 TemplateSelector
 
-  return (
-    <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
-      <div
-        style={{
-          position: "absolute",
-          left: position.x,
-          top: position.y,
-          opacity: animatedOpacity,
-          transform,
-          fontSize: style.fontSize,
-          color: style.color,
-          fontFamily: style.fontFamily,
-          fontWeight: style.fontWeight,
-          textAlign: style.textAlign || "left",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {element.text}
-      </div>
-    </AbsoluteFill>
-  );
-};
-```
+**File:** `gui/src/components/TemplateSelector.tsx`
 
-### 5.3 ImageElement — Image Overlay
+Template catalog:
+- Displays 10 template cards in a responsive grid
+- Each card shows: icon, name, category badge (colored), duration badge, description, and hover accent border
+- Category filter chips (All, Branding, Product, Social, Educational) with active state
+- Clicking a template calls `onSelectTemplate(template.generate())` which populates the full VideoConfig
+- Loading state with skeleton shimmer animation
+- Empty state when no templates match the selected category
+- Smooth card entrance animations on mount
 
-Renders a positioned image with configurable sizing.
+### 5.6 VideoPreview
 
-```tsx
-import { Img } from "remotion";
-import { ImageElement as ImageElementType } from "../types";
+**File:** `gui/src/components/VideoPreview.tsx`
 
-export const ImageElement: React.FC<{ element: ImageElementType }> = ({
-  element,
-}) => {
-  const { position, size, opacity = 1 } = element;
+Live video preview panel using `@remotion/player`:
+- Toggle visibility via the play button in the header
+- Panel header shows "Preview" title and current resolution badge
+- `<Player>` component renders `MainComposition` directly with the current `VideoConfig` as `inputProps`
+- Smart sizing: portrait videos get a phone-like frame (70% max-width), landscape fills the panel
+- `aspectRatio` CSS property ensures perfect proportions
+- Play/Pause button, timeline seek bar, and loop toggle
+- Auto-scales to fit the panel (no scrollbars)
+- Dark preview background (#08080a)
+- Info bar shows current frame, FPS, and total duration
 
-  return (
-    <Img
-      src={element.src}
-      style={{
-        position: "absolute",
-        left: position.x,
-        top: position.y,
-        width: size?.width ?? "auto",
-        height: size?.height ?? "auto",
-        opacity,
-        objectFit: size?.objectFit ?? "contain",
-      }}
-    />
-  );
-};
-```
+### 5.7 MainComposition (Remotion)
 
-### 5.4 AudioTrack — Background Audio
+**File:** `remotion/compositions/MainComposition.tsx`
 
-```tsx
-import { Audio } from "@remotion/media";
-import { AudioTrack as AudioTrackType } from "../types";
+Root composition that renders the full video:
+- **Scene backgrounds** — iterates `canvas.scenes[]` and wraps each in a `<Sequence>` with the scene's color. Falls back to a single `AbsoluteFill` with `canvas.backgroundColor` if no scenes are defined.
+- **Audio tracks** — maps `tracks.audio[]` to `<AudioTrackComponent>` components
+- **Visual elements** — maps `tracks.elements[]` to `<Sequence>` wrappers containing `<TextElement>` or `<ImageElement>`
+- All elements are positioned absolutely within the 1080×1920 (or custom) canvas
 
-export const AudioTrack: React.FC<{ track: AudioTrackType }> = ({ track }) => {
-  return (
-    <Audio
-      src={track.src}
-      startFrom={track.trimBefore}
-      endAt={track.trimAfter}
-      volume={track.volume ?? 1}
-    />
-  );
-};
-```
+### 5.8 TextElement (Remotion)
 
-### 5.5 Start-Render IPC Handler (Main Process)
+**File:** `remotion/components/TextElement.tsx`
 
-The core handler that marshals assets, writes the config JSON, and spawns the Remotion CLI.
+Animated text overlay with `useCurrentFrame()` and `interpolate()`:
 
-```typescript
-import { ipcMain } from "electron";
-import { spawn } from "child_process";
-import fs from "fs";
-import path from "path";
-import os from "os";
-import { VideoConfig } from "../shared/VideoConfig";
+| Animation | Effect |
+|---|---|
+| `fadeIn` | Opacity 0 → 1 over `durationInFrames` |
+| `slideUp` | TranslateY 50px → 0 + opacity 0 → 1 |
+| `scaleIn` | Scale 0.5 → 1 + opacity 0 → 1 |
 
-ipcMain.handle(
-  "start-render",
-  async (event, config: VideoConfig, outputPath: string) => {
-    const tempDir = path.join(os.tmpdir(), `mike-video-${Date.now()}`);
-    fs.mkdirSync(tempDir, { recursive: true });
+- Falls back to static rendering (full opacity, identity transform) when frame exceeds animation duration
+- Supports multiline text via `white-space: pre-wrap`
+- Max-width 80% with `word-break: break-word`
+- Line height 1.2
 
-    const configCopy: VideoConfig = JSON.parse(JSON.stringify(config));
+### 5.9 ImageElement (Remotion)
 
-    // Copy assets and rewrite paths to temp dir
-    const copyAsset = (srcPath: string): string => {
-      const dest = path.join(tempDir, path.basename(srcPath));
-      fs.copyFileSync(srcPath, dest);
-      return dest;
-    };
+**File:** `remotion/components/ImageElement.tsx`
 
-    configCopy.tracks.audio = configCopy.tracks.audio.map((t) => ({
-      ...t,
-      src: copyAsset(t.src),
-    }));
+Image overlay with:
+- Absolute positioning at `position.x` / `position.y`
+- Configurable width/height and `objectFit` (cover, contain, fill)
+- Simple fade-in over first 15 frames
+- Fallback placeholder ("No image") when `src` is empty
 
-    configCopy.tracks.elements = configCopy.tracks.elements.map((el) => {
-      if (el.type === "image") return { ...el, src: copyAsset(el.src) };
-      return el;
-    });
+### 5.10 AudioTrack (Remotion)
 
-    const propsPath = path.join(tempDir, "props.json");
-    fs.writeFileSync(propsPath, JSON.stringify(configCopy, null, 2));
+**File:** `remotion/components/AudioTrack.tsx`
 
-    const npxCmd = process.platform === "win32" ? "npx.cmd" : "npx";
-
-    const proc = spawn(npxCmd, [
-      "remotion", "render",
-      "remotion/index.tsx", "MikeVideo",
-      outputPath,
-      `--props=${propsPath}`,
-      "--log=verbose",
-    ], {
-      cwd: process.cwd(),
-      shell: process.platform === "win32",
-    });
-
-    let stderrBuf = "";
-    const progressPatterns = [
-      /Rendered frame\s+(\d+)\/(\d+)/i,
-      /Rendering frame\s+(\d+)\s*\/\s*(\d+)/i,
-      /(\d+)\/(\d+)\s*frames rendered/i,
-    ];
-
-    proc.stderr.on("data", (data) => {
-      const str = data.toString();
-      stderrBuf += str;
-      for (const line of str.split("\n")) {
-        for (const pattern of progressPatterns) {
-          const match = line.match(pattern);
-          if (match) {
-            const current = parseInt(match[1], 10);
-            const total = parseInt(match[2], 10);
-            event.sender.send("render-progress", Math.round((current / total) * 100));
-            break;
-          }
-        }
-      }
-    });
-
-    return new Promise((resolve, reject) => {
-      proc.on("close", (code) => {
-        if (code === 0) {
-          event.sender.send("render-complete", outputPath);
-          resolve(null);
-        } else {
-          const errorTail = stderrBuf.split("\n").slice(-10).join("\n");
-          event.sender.send("render-error", errorTail);
-          reject(new Error(`Render failed with code ${code}`));
-        }
-      });
-    });
-  }
-);
-```
-
-### 5.6 Cancel-Render Handler
-
-```typescript
-let activeRender: ReturnType<typeof spawn> | null = null;
-
-// Inside start-render handler:
-activeRender = proc;
-
-ipcMain.handle("cancel-render", () => {
-  if (activeRender) {
-    activeRender.kill("SIGTERM");
-    activeRender = null;
-  }
-});
-```
-
-### 5.7 FFmpeg Detection (App Startup)
-
-```typescript
-import { execSync } from "child_process";
-
-function checkFFmpeg(): boolean {
-  try {
-    execSync("ffmpeg -version", { stdio: "ignore" });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-app.on("ready", () => {
-  if (!checkFFmpeg()) {
-    dialog.showErrorBox(
-      "FFmpeg Required",
-      "FFmpeg is not found in PATH. Please install it: https://ffmpeg.org/download.html"
-    );
-    app.quit();
-  }
-});
-```
+Simple `Audio` component wrapper:
+- Passes `src`, `startFrom` (trimBefore), `endAt` (trimAfter), and `volume` directly to Remotion's `<Audio>`
+- Uses `remotion` package's `<Audio>` (not `@remotion/media`)
 
 ---
 
-## 6. Packaging & Distribution
+## 6. Template System
 
-### 6.1 Electron Builder Configuration
+### 6.1 VideoTemplate Interface
 
-Add to `package.json`:
+```typescript
+export interface VideoTemplate {
+  id: string;
+  name: string;
+  description: string;
+  duration: number; // seconds
+  category: "Branding" | "Product" | "Social" | "Educational";
+  color: string; // preview card color
+  icon: string; // emoji for the card
+  generate: (overrides?: Record<string, string>) => VideoConfig;
+}
+```
+
+### 6.2 Template Registry
+
+All templates are registered in `gui/src/templates/index.ts` and exported as the `TEMPLATES` array. TemplateSelector iterates this array to render cards.
+
+### 6.3 Shared Helper
+
+**File:** `gui/src/templates/helpers.ts`
+
+```typescript
+function txt(
+  id: string,
+  text: string,
+  from: number,
+  durationInFrames: number,
+  x: number,
+  y: number,
+  overrides?: Partial<TextElement>
+): TextElement
+```
+
+All templates use `txt()` to consistently generate `TextElement` objects with sensible defaults (fontSize: 72, color: "#ffffff", fontFamily: "Arial, sans-serif", textAlign: "center", animation: slideUp 30 frames).
+
+### 6.4 Template Catalog
+
+| # | Template | Duration | Category | Override Fields | Scenes | Key Features |
+|---|---|---|---|---|---|---|
+| 1 | **Brand Story** | 60s | Branding | headline, problem, solution, result, cta | 5 | Value props, results, CTA |
+| 2 | **Feature Showcase** | 45s | Product | productName, feature1, feature2, feature3, cta | 4 | 3 features with bold stats |
+| 3 | **Quick Announcement** | 30s | Social | headline, message, date, cta, tagline | 4 | High-energy, punchy CTAs |
+| 4 | **Tips & Listicle** | 60s | Educational | topic, tip1, tip2, tip3, tip4 | 4 | 4 numbered tips with quotes |
+| 5 | **Sales Pitch** | 60s | Product | headline, challenge, solution, testimonial, client, role, cta | 5 | Quote cards, trust signals, testimonial |
+| 6 | **Event Countdown** | 45s | Social | eventName, date, time, location, speaker1-4, cta | 5 | Countdown, speakers, registration |
+| 7 | **How-To Tutorial** | 90s | Educational | topic, step1-5, tip | 5 | 5 numbered steps, progress, recap |
+| 8 | **Team Introduction** | 45s | Branding | company, mission, value1-3, member1-3 | 5 | Values, team spotlights, perks |
+| 9 | **Year in Review** | 60s | Branding | year, stat1-3, milestone1-2, highlight | 5 | Big stats, milestones, impact |
+| 10 | **Holiday Greeting** | 30s | Social | recipient, message, gratitude, wish | 4 | Festive, warm seasonal greeting |
+
+### 6.5 Adding a New Template
+
+1. Create `gui/src/templates/my-template.ts`
+2. Import `txt` from `./helpers`
+3. Export a `VideoTemplate` object with `id`, `name`, `description`, `duration`, `category`, `color`, `icon`, and `generate()` method
+4. Import and add to the `TEMPLATES` array in `gui/src/templates/index.ts`
+
+The `generate()` method returns a fully-populated `VideoConfig` with placeholder text. Each text element should use `txt()` for consistency.
+
+---
+
+## 7. Stock Media Catalog
+
+**File:** `gui/src/data/stock-media.ts`
+
+A curated catalog of free stock media for video composition. Images use [picsum.photos](https://picsum.photos) (free, no API key). Audio uses [SoundHelix](https://www.soundhelix.com/) (CC BY 3.0).
+
+### 7.1 Types
+
+```typescript
+interface StockImage {
+  id: string;
+  title: string;
+  category: ImageCategory;  // backgrounds | nature | business | technology | abstract | city | people
+  url: string;              // Full-res image URL
+  thumbUrl: string;         // Thumbnail URL (400×600)
+  attribution?: string;     // Optional attribution
+  tags: string[];
+}
+
+interface StockAudio {
+  id: string;
+  title: string;
+  category: AudioCategory;  // background | corporate | upbeat | calm | cinematic
+  url: string;              // MP3 URL
+  duration: string;         // e.g., "5:14"
+  mood: string;             // e.g., "Inspiring", "Calm"
+  attribution: string;
+}
+```
+
+### 7.2 Media Counts
+
+| Image Category | Count |
+|---|---|
+| Backgrounds | 6 |
+| Nature | 6 |
+| Business | 6 |
+| Technology | 6 |
+| Abstract | 4 |
+| City | 4 |
+| People | 4 |
+| **Total** | **36** |
+
+| Audio Category | Count |
+|---|---|
+| Background | 2 |
+| Corporate | 1 |
+| Upbeat | 2 |
+| Calm | 2 |
+| Cinematic | 1 |
+| **Total** | **8** |
+
+### 7.3 UI Grouping
+
+Pre-built category arrays for rendering:
+
+```typescript
+IMAGE_CATEGORIES: MediaCategory<StockImage>[]
+AUDIO_CATEGORIES: MediaCategory<StockAudio>[]
+```
+
+Each contains `{ id, label, icon, items }` ready to render as filter tabs or section headers.
+
+---
+
+## 8. Packaging & Distribution
+
+### 8.1 Electron Builder Configuration
+
+From `package.json`:
 
 ```json
 {
@@ -574,49 +651,61 @@ Add to `package.json`:
     "productName": "Mike Video Generator",
     "directories": { "output": "release" },
     "files": [
-      "dist-electron/**/*",
-      "dist-gui/**/*",
+      "out/**/*",
       "remotion/**/*",
       "shared/**/*",
       "node_modules/**/*"
     ],
     "win": { "target": "nsis", "icon": "build/icon.ico" },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true }
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
 ```
 
-> **Important:** The `remotion/` and `shared/` directories must be included in `build.files` so the packaged app can find them at runtime.
+> **Important:** `remotion/` and `shared/` directories are included in `build.files` so the packaged app can find them at runtime.
 
-### 6.2 Build Commands
+### 8.2 Build Commands
 
 ```bash
-npm run dev       # Development mode (hot reload)
-npm run build     # Production build
-npm run dist      # Package Windows NSIS installer
+npm run dev            # Development mode (Electron + Vite hot reload)
+npm run build          # Production build (Electron + Renderer + Remotion)
+npm run dist           # Package Windows NSIS installer
+npm run preview        # Electron Vite preview (serve built output)
+npm run remotion:preview  # Standalone Remotion Studio for template development
+npm run remotion:render   # CLI render (for testing without GUI)
 ```
 
-### 6.3 Pre-Release Checklist
+### 8.3 FFmpeg Requirement
 
-- [ ] `remotion.config.ts` exists with `Config.setVideoImageFormat("jpeg")` for faster renders
-- [ ] `remotion/index.tsx` is not inside `gui/src/` (it is a separate entry point)
+The app checks for FFmpeg on startup. If not found in PATH, an error dialog is shown and the app exits. Remotion requires FFmpeg for video encoding.
+
+### 8.4 Pre-Release Checklist
+
+- [ ] `remotion/index.tsx` registers the `Root` component
+- [ ] `Root.tsx` defines the `"MikeVideo"` composition
 - [ ] `remotion/` and `shared/` are listed in `electron-builder`'s `build.files`
 - [ ] `preload.ts` exposes exactly the API the renderer expects
-- [ ] `tsconfig.json` has `"moduleResolution": "bundler"` for Vite compatibility
+- [ ] FFmpeg detection works in the packaged environment
+- [ ] `out/` directory is clean before building (`electron-vite build` clears it)
+- [ ] All 10 templates generate valid `VideoConfig` objects
+- [ ] Render progress regex matches the installed Remotion version's output format
 
 ---
 
-## 7. Common Pitfalls & Solutions
+## 9. Common Pitfalls & Solutions
 
 | Bug | Root Cause | Prevention |
 |---|---|---|
-| Remotion can't find assets | Absolute paths with backslashes break JSON or Remotion's URL parser | Always copy assets to temp dir and use `path.join()` (normalizes separators) |
-| FFmpeg not found in packaged app | Remotion requires FFmpeg in PATH; users don't have it | Check on startup with FFmpeg detection. Bundle `ffmpeg-static` and set `FFMPEG_PATH` if bundled |
-| Renderer can't use `require("child_process")` | Electron security blocks Node modules in renderer | Always use `contextBridge` in preload. Never set `nodeIntegration: true` |
-| `npx` not found in packaged app | Packaged Electron apps don't inherit shell PATH on Windows | Use `shell: true` in spawn options on Windows, or use `npm exec` with full path to `node_modules/.bin/remotion` |
-| Remotion composition not found | Composition ID mismatch between CLI and `Root.tsx` | Hardcode `"MikeVideo"` everywhere. Register only one composition in `Root.tsx` |
-| Progress bar stuck at 0% | Parsing wrong output stream or regex mismatch | Remotion logs progress to **stderr** in verbose mode. Listen to `stderr`, not `stdout` |
-| EACCES / permission denied on render | Output path in protected directory (Program Files) | Default save dialog to `app.getPath("desktop")` or `app.getPath("downloads")` |
-| White screen after packaging | Vite build paths incorrect in production | Use `__dirname` resolution: `path.join(__dirname, "../dist-gui/index.html")` |
-| Audio out of sync / missing | `<Audio>` imported from wrong module | Use `import { Audio } from "@remotion/media"`, NOT from `"remotion"` |
-| Images don't appear | Using `staticFile()` for user-uploaded files outside `public/` | Pass absolute `file://` paths directly to `src` prop. Only use `staticFile()` for built-in assets |
+| **Remotion can't find assets** | Absolute paths with backslashes break JSON or Remotion's URL parser | Always copy assets to temp dir and use `path.join()` (normalizes separators) |
+| **FFmpeg not found in packaged app** | Remotion requires FFmpeg in PATH; users don't have it | Check on startup. Consider bundling `ffmpeg-static` |
+| **"Could not find composition"** | Composition ID mismatch between CLI args and `Root.tsx` | Hardcode `"MikeVideo"` everywhere. Only one composition in Root |
+| **Progress bar stuck at 0%** | Parsing wrong output stream or regex doesn't match Remotion version | Remotion logs progress to **stderr**. Use `--log=verbose` to ensure format is visible |
+| **White screen after packaging** | Vite build paths incorrect in production | Use `__dirname` resolution in main process |
+| **Audio out of sync / missing** | `<Audio>` imported from wrong module | Use `remotion`'s `<Audio>` (not `@remotion/media` in recent versions) |
+| **Images don't appear** | Using `staticFile()` for user-uploaded files outside `public/` | Pass absolute `file://` paths directly to `<Img src>`. Only use `staticFile()` for built-in assets |
+| **Save path with special characters** | Greek/spaced paths break shell spawning | Pass `--props` as a separate arg, not concatenated. Use `shell: true` on Windows |
+| **Render process orphaned on crash** | Child process not killed when Electron exits | Track `activeRenderProcess` and kill in `before-quit` handler + Windows `taskkill /T` |
+| **Date-stamped filename wrong** | Extension parsed incorrectly | Use `path.extname()` + `path.basename()` for reliable filename parsing |
