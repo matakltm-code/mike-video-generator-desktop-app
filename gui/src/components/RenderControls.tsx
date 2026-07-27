@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import type { VideoConfig, RenderState } from "../../../shared/VideoConfig";
 
 interface RenderControlsProps {
@@ -117,12 +118,47 @@ export default function RenderControls({
         )}
       </div>
 
-      {/* Error detail tooltip */}
+      {/* Error detail panel */}
       {renderState === "ERROR" && renderError && (
-        <div style={styles.errorDetail}>
-          <p style={styles.errorDetailText}>{renderError}</p>
-        </div>
+        <ErrorDetail error={renderError} />
       )}
+    </div>
+  );
+}
+
+// ─── Error Detail Panel ──────────────────────────────────────────────
+
+function ErrorDetail({ error }: { error: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(error).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [error]);
+
+  return (
+    <div style={styles.errorDetail}>
+      <div style={styles.errorDetailHeader}>
+        <span style={styles.errorDetailTitle}>Render Error</span>
+        <button style={styles.copyBtn} onClick={handleCopy} title="Copy error message">
+          {copied ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" />
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+            </svg>
+          )}
+          <span style={styles.copyLabel}>{copied ? "Copied" : "Copy"}</span>
+        </button>
+      </div>
+      <div style={styles.errorDetailBody}>
+        <pre style={styles.errorDetailText}>{error}</pre>
+      </div>
     </div>
   );
 }
@@ -267,22 +303,65 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: "nowrap" as const,
   },
   errorDetail: {
-    position: "absolute" as const,
-    top: "100%",
-    right: 0,
-    marginTop: 4,
-    padding: "10px 14px",
-    background: "rgba(239, 68, 68, 0.1)",
+    position: "fixed" as const,
+    top: "80px",
+    right: 16,
+    width: "min(40vw, 640px)",
+    maxWidth: 640,
+    minWidth: 320,
+    background: "rgba(25, 5, 5, 0.95)",
+    border: "1px solid rgba(239, 68, 68, 0.4)",
+    borderRadius: "var(--radius-md)",
+    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
+    zIndex: 1000,
+    overflow: "hidden",
+    backdropFilter: "blur(12px)",
+  },
+  errorDetailHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "8px 14px",
+    borderBottom: "1px solid rgba(239, 68, 68, 0.2)",
+    background: "rgba(239, 68, 68, 0.08)",
+  },
+  errorDetailTitle: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: "var(--error)",
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.06em",
+  },
+  copyBtn: {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    padding: "4px 10px",
     border: "1px solid rgba(239, 68, 68, 0.3)",
     borderRadius: "var(--radius-sm)",
-    maxWidth: 360,
-    zIndex: 100,
+    background: "rgba(239, 68, 68, 0.1)",
+    color: "var(--error)",
+    fontSize: 11,
+    fontWeight: 500,
+    cursor: "pointer",
+    transition: "all var(--transition)",
+  },
+  copyLabel: {
+    fontSize: 11,
+    fontWeight: 500,
+  },
+  errorDetailBody: {
+    maxHeight: "calc(100vh - 160px)",
+    overflow: "auto",
+    padding: "12px 14px",
   },
   errorDetailText: {
     fontSize: 11,
-    color: "var(--error)",
-    fontFamily: "monospace",
+    color: "#fbb",
+    fontFamily: "'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace",
     whiteSpace: "pre-wrap" as const,
     wordBreak: "break-all" as const,
+    lineHeight: 1.5,
+    margin: 0,
   },
 };

@@ -5,6 +5,8 @@ import type { VideoConfig } from "./types";
 
 // Each composition registers a unique ID that the CLI refers to.
 // The `--props` flag passes the user's VideoConfig at render time.
+// `calculateMetadata` dynamically reads the actual duration/resolution
+// from the props so templates longer than DEFAULT_CONFIG work correctly.
 export const Root: React.FC = () => {
   const { canvas } = DEFAULT_CONFIG;
 
@@ -17,6 +19,12 @@ export const Root: React.FC = () => {
       width={canvas.width}
       height={canvas.height}
       defaultProps={DEFAULT_CONFIG}
+      calculateMetadata={({ props }) => ({
+        durationInFrames: props.canvas.durationInFrames,
+        fps: props.canvas.fps,
+        width: props.canvas.width,
+        height: props.canvas.height,
+      })}
     />
   );
 };
